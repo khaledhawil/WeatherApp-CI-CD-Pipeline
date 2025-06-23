@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: weatherapp-auth
-        image: khaledhawil/auth:1.0.0
+        image: khaledhawil/auth:20250623-141841-c654fb7
         imagePullPolicy: IfNotPresent
         ports:
           - containerPort: 8080
