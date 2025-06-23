@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mysql-data-cleanup
+spec:
+  template:
+    spec:
+      containers:
+      - name: cleanup
+        image: busybox:1.35
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          echo "Cleaning up MySQL data directory..."
+          rm -rf /var/lib/mysql/*
+          rm -rf /var/lib/mysql/.*
+          echo "Data directory cleaned successfully"
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+      volumes:
+      - name: mysql-data
+        persistentVolumeClaim:
+          claimName: mysql-persistent-storage-mysql-0
+      restartPolicy: Never
+  backoffLimit: 1

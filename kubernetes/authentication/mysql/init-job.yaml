@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mysql-init-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: mysql-init-container
+        image: mysql:5.7
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: root-password
+        - name: MYSQL_AUTH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: auth-password
+        - name: MYSQL_USER
+          value: "authuser"
+        - name: MYSQL_HOST
+          value: "mysql-0.mysql"  # StatefulSet pod name
+        - name: MYSQL_PORT
+          value: "3306"
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          echo "Waiting for MySQL to be ready..."
+          until mysql -h${MYSQL_HOST} -P${MYSQL_PORT} -uroot -p${MYSQL_ROOT_PASSWORD} -e "SELECT 1" > /dev/null 2>&1; do
+            echo "MySQL is not ready yet. Waiting..."
+            sleep 5
+          done
+          echo "MySQL is ready. Initializing database..."
+          mysql -h${MYSQL_HOST} -P${MYSQL_PORT} -uroot -p${MYSQL_ROOT_PASSWORD} <<EOF
+          CREATE DATABASE IF NOT EXISTS weatherapp;
+          CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_AUTH_PASSWORD}';
+          GRANT ALL PRIVILEGES ON weatherapp.* TO '${MYSQL_USER}'@'%';
+          FLUSH PRIVILEGES;
+          SELECT 'Database initialization completed successfully' as status;
+          EOF
+          echo "Database initialization completed!"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+      restartPolicy: Never
+  backoffLimit: 3

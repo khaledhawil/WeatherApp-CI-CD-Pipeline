@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+data:
+  init.sql: |
+    -- MySQL initialization script
+    CREATE DATABASE IF NOT EXISTS weatherapp;
+    CREATE USER 'authuser'@'%' IDENTIFIED BY 'my-secret-pw';
+    GRANT ALL PRIVILEGES ON weatherapp.* TO 'authuser'@'%';
+    FLUSH PRIVILEGES;
