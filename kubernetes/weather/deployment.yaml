@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: weatherapp-weather
-          image: "khaledhawil/weather:1.0.0"
+          image: "khaledhawil/weather:20250623-144901-f3a1adf"
           imagePullPolicy: IfNotPresent
           env:
           - name: APIKEY
