@@ -1,0 +1,70 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: weatherapp-complete
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: weatherapp
+    app.kubernetes.io/component: complete-app
+    app.kubernetes.io/part-of: weatherapp
+  annotations:
+    argocd.argoproj.io/manifest-generate-paths: .
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: weatherapp-project
+  sources:
+    # MySQL Database
+    - repoURL: https://github.com/khaledhawil/WeatherApp-CI-CD-Pipeline.git
+      targetRevision: HEAD
+      path: kubernetes/authentication/mysql
+      ref: mysql
+    # Authentication Service
+    - repoURL: https://github.com/khaledhawil/WeatherApp-CI-CD-Pipeline.git
+      targetRevision: HEAD
+      path: kubernetes/authentication
+      directory:
+        include: "*.yaml"
+        exclude: "mysql/**"
+      ref: auth
+    # Weather Service
+    - repoURL: https://github.com/khaledhawil/WeatherApp-CI-CD-Pipeline.git
+      targetRevision: HEAD
+      path: kubernetes/weather
+      ref: weather
+    # UI Service
+    - repoURL: https://github.com/khaledhawil/WeatherApp-CI-CD-Pipeline.git
+      targetRevision: HEAD
+      path: kubernetes/ui
+      ref: ui
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ApplyOutOfSyncOnly=true
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: 10
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    - group: ""
+      kind: Service
+      jsonPointers:
+        - /spec/clusterIP
+        - /spec/clusterIPs

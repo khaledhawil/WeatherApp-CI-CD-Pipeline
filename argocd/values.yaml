@@ -1,0 +1,84 @@
+# ArgoCD Configuration Values for WeatherApp
+# This file contains common configuration values for ArgoCD applications
+
+# Repository Configuration
+repository:
+  url: "https://github.com/khaledhawil/WeatherApp-CI-CD-Pipeline.git"
+  branch: "HEAD"
+  
+# Destination Configuration
+destination:
+  server: "https://kubernetes.default.svc"
+  namespace: "default"
+
+# Sync Policy Configuration
+syncPolicy:
+  automated:
+    enabled: true
+    prune: true
+    selfHeal: true
+    allowEmpty: false
+  syncOptions:
+    - "CreateNamespace=true"
+    - "PrunePropagationPolicy=foreground"
+    - "PruneLast=true"
+    - "ApplyOutOfSyncOnly=true"
+    - "RespectIgnoreDifferences=true"
+  retry:
+    limit: 5
+    backoff:
+      duration: "5s"
+      factor: 2
+      maxDuration: "3m"
+
+# Application Configuration
+applications:
+  mysql:
+    path: "kubernetes/authentication/mysql"
+    syncWave: 1
+    description: "MySQL Database for WeatherApp"
+  
+  auth:
+    path: "kubernetes/authentication"
+    syncWave: 2
+    description: "Authentication Service"
+    exclude: "mysql/**"
+  
+  weather:
+    path: "kubernetes/weather"
+    syncWave: 3
+    description: "Weather Service"
+  
+  ui:
+    path: "kubernetes/ui"
+    syncWave: 4
+    description: "UI Frontend Service"
+
+# Project Configuration
+project:
+  name: "weatherapp-project"
+  description: "WeatherApp microservices project with CI/CD pipeline"
+  roles:
+    - name: "read-only"
+      description: "Read-only access to weatherapp applications"
+    - name: "admin"
+      description: "Full admin access to weatherapp applications"
+
+# Monitoring and Observability
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+  grafana:
+    enabled: true
+  alerts:
+    enabled: true
+
+# Security Configuration
+security:
+  rbac:
+    enabled: true
+  networkPolicies:
+    enabled: false
+  podSecurityPolicies:
+    enabled: false

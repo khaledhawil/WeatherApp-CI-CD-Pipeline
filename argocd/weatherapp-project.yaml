@@ -1,0 +1,65 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: weatherapp-project
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: weatherapp
+    app.kubernetes.io/component: project
+spec:
+  description: WeatherApp microservices project with CI/CD pipeline
+  sourceRepos:
+    - 'https://github.com/khaledhawil/WeatherApp-CI-CD-Pipeline.git'
+    - 'https://github.com/khaledhawil/*'
+  destinations:
+    - namespace: default
+      server: https://kubernetes.default.svc
+    - namespace: weatherapp
+      server: https://kubernetes.default.svc
+    - namespace: argocd
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: ''
+      kind: Namespace
+    - group: ''
+      kind: PersistentVolume
+    - group: storage.k8s.io
+      kind: StorageClass
+    - group: networking.k8s.io
+      kind: IngressClass
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: ConfigMap
+    - group: ''
+      kind: Secret
+    - group: ''
+      kind: Service
+    - group: ''
+      kind: ServiceAccount
+    - group: ''
+      kind: PersistentVolumeClaim
+    - group: apps
+      kind: Deployment
+    - group: apps
+      kind: StatefulSet
+    - group: batch
+      kind: Job
+    - group: networking.k8s.io
+      kind: Ingress
+    - group: networking.k8s.io
+      kind: NetworkPolicy
+  roles:
+    - name: read-only
+      description: Read-only privileges to weatherapp project
+      policies:
+        - p, proj:weatherapp-project:read-only, applications, get, weatherapp-project/*, allow
+        - p, proj:weatherapp-project:read-only, applications, action/*, weatherapp-project/*, deny
+      groups:
+        - weatherapp-readonly
+    - name: admin
+      description: Admin privileges to weatherapp project
+      policies:
+        - p, proj:weatherapp-project:admin, applications, *, weatherapp-project/*, allow
+        - p, proj:weatherapp-project:admin, repositories, *, *, allow
+      groups:
+        - weatherapp-admins
