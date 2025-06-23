@@ -1,0 +1,265 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'auth/**'
+      - 'weather/**'
+      - 'UI/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'auth/**'
+      - 'weather/**'
+      - 'UI/**'
+
+env:
+  DOCKER_REGISTRY: docker.io
+  DOCKER_USERNAME: khaledhawil
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      auth-changed: ${{ steps.changes.outputs.auth }}
+      weather-changed: ${{ steps.changes.outputs.weather }}
+      ui-changed: ${{ steps.changes.outputs.ui }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            auth:
+              - 'auth/**'
+            weather:
+              - 'weather/**'
+            ui:
+              - 'UI/**'
+
+  build-and-push-auth:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.auth-changed == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Generate image tag
+        id: tag
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          SHORT_SHA=${GITHUB_SHA:0:7}
+          TAG="${TIMESTAMP}-${SHORT_SHA}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Generated tag: ${TAG}"
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./auth
+          push: true
+          tags: |
+            ${{ env.DOCKER_USERNAME }}/auth:${{ steps.tag.outputs.tag }}
+            ${{ env.DOCKER_USERNAME }}/auth:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-and-push-weather:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.weather-changed == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Generate image tag
+        id: tag
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          SHORT_SHA=${GITHUB_SHA:0:7}
+          TAG="${TIMESTAMP}-${SHORT_SHA}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Generated tag: ${TAG}"
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./weather
+          push: true
+          tags: |
+            ${{ env.DOCKER_USERNAME }}/weather:${{ steps.tag.outputs.tag }}
+            ${{ env.DOCKER_USERNAME }}/weather:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-and-push-ui:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ui-changed == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Generate image tag
+        id: tag
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          SHORT_SHA=${GITHUB_SHA:0:7}
+          TAG="${TIMESTAMP}-${SHORT_SHA}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "Generated tag: ${TAG}"
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./UI
+          push: true
+          tags: |
+            ${{ env.DOCKER_USERNAME }}/ui:${{ steps.tag.outputs.tag }}
+            ${{ env.DOCKER_USERNAME }}/ui:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  update-manifests:
+    needs: [detect-changes, build-and-push-auth, build-and-push-weather, build-and-push-ui]
+    if: always() && (needs.build-and-push-auth.result == 'success' || needs.build-and-push-weather.result == 'success' || needs.build-and-push-ui.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+      
+      - name: Update auth deployment manifest
+        if: needs.build-and-push-auth.result == 'success'
+        run: |
+          NEW_TAG="${{ needs.build-and-push-auth.outputs.image-tag }}"
+          sed -i "s|image: khaledhawil/auth:.*|image: khaledhawil/auth:${NEW_TAG}|g" kubernetes/authentication/deployment.yaml
+          echo "Updated auth deployment with tag: ${NEW_TAG}"
+      
+      - name: Update weather deployment manifest
+        if: needs.build-and-push-weather.result == 'success'
+        run: |
+          NEW_TAG="${{ needs.build-and-push-weather.outputs.image-tag }}"
+          sed -i "s|image: \"khaledhawil/weather:.*\"|image: \"khaledhawil/weather:${NEW_TAG}\"|g" kubernetes/weather/deployment.yaml
+          echo "Updated weather deployment with tag: ${NEW_TAG}"
+      
+      - name: Update UI deployment manifest
+        if: needs.build-and-push-ui.result == 'success'
+        run: |
+          NEW_TAG="${{ needs.build-and-push-ui.outputs.image-tag }}"
+          sed -i "s|image: \"khaledhawil/ui:.*\"|image: \"khaledhawil/ui:${NEW_TAG}\"|g" kubernetes/ui/deployment.yaml
+          echo "Updated UI deployment with tag: ${NEW_TAG}"
+      
+      - name: Check for changes
+        id: git-changes
+        run: |
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+            git status --porcelain
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
+          fi
+      
+      - name: Commit and push changes
+        if: steps.git-changes.outputs.changes == 'true'
+        run: |
+          git add kubernetes/*/deployment.yaml
+          git commit -m "[skip ci] Update deployment manifests with new image tags
+          
+          - Auth: ${{ needs.build-and-push-auth.outputs.image-tag || 'unchanged' }}
+          - Weather: ${{ needs.build-and-push-weather.outputs.image-tag || 'unchanged' }}
+          - UI: ${{ needs.build-and-push-ui.outputs.image-tag || 'unchanged' }}
+          
+          Auto-generated by GitHub Actions"
+          git push origin ${{ github.ref_name }}
+
+  deploy-notification:
+    needs: [detect-changes, build-and-push-auth, build-and-push-weather, build-and-push-ui, update-manifests]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Status | Image Tag |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|-----------|" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.build-and-push-auth.result }}" == "success" ]]; then
+            echo "| Auth | ✅ Built & Pushed | \`${{ needs.build-and-push-auth.outputs.image-tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.detect-changes.outputs.auth-changed }}" == "true" ]]; then
+            echo "| Auth | ❌ Failed | - |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Auth | ⏭️ No Changes | - |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.build-and-push-weather.result }}" == "success" ]]; then
+            echo "| Weather | ✅ Built & Pushed | \`${{ needs.build-and-push-weather.outputs.image-tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.detect-changes.outputs.weather-changed }}" == "true" ]]; then
+            echo "| Weather | ❌ Failed | - |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Weather | ⏭️ No Changes | - |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.build-and-push-ui.result }}" == "success" ]]; then
+            echo "| UI | ✅ Built & Pushed | \`${{ needs.build-and-push-ui.outputs.image-tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.detect-changes.outputs.ui-changed }}" == "true" ]]; then
+            echo "| UI | ❌ Failed | - |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| UI | ⏭️ No Changes | - |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Review the updated deployment manifests" >> $GITHUB_STEP_SUMMARY
+          echo "2. Apply changes to your Kubernetes cluster:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "kubectl apply -f kubernetes/" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
