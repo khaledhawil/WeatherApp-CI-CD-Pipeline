@@ -62,10 +62,16 @@ k8s-course-lab/
 
 ## Prerequisites
 
-- Kubernetes cluster (this project uses DigitalOcean Kubernetes, but any Kubernetes cluster will work)
+- Kubernetes cluster (this project uses DigitalOcean Kubernetes, but any Kubernetes cluster will work with some configuration adjustments)
 - kubectl configured to connect to your cluster
 - Docker images built and pushed to a container registry
 - OpenWeatherMap API key (for weather service)
+
+**Note**: While this application can run on any Kubernetes cluster, you may need to modify certain configurations in the Kubernetes manifests based on your cluster setup:
+- Storage class names (currently set to `do-block-storage` for DigitalOcean)
+- Ingress controller configuration
+- Load balancer service types
+- Node selector requirements
 
 ## Services Overview
 
@@ -102,6 +108,35 @@ k8s-course-lab/
 - **Storage**: Persistent volume (10Gi)
 
 ## Deployment Instructions
+
+**Important**: Before deploying, review and adjust the Kubernetes manifests for your specific cluster:
+
+### Cluster-Specific Configurations
+
+1. **Storage Class**: Update `storageClassName` in MySQL StatefulSet
+   ```bash
+   # For AWS EKS
+   storageClassName: "gp2"
+   
+   # For Google GKE
+   storageClassName: "standard"
+   
+   # For DigitalOcean (current setting)
+   storageClassName: "do-block-storage"
+   ```
+
+2. **Ingress Controller**: Modify ingress annotations based on your setup
+   ```bash
+   # For NGINX Ingress Controller
+   kubernetes.io/ingress.class: "nginx"
+   
+   # For AWS ALB
+   kubernetes.io/ingress.class: "alb"
+   ```
+
+3. **Service Types**: Adjust service types based on your cluster capabilities
+   - LoadBalancer services may need different configurations
+   - Some clusters may require NodePort instead
 
 ### 1. Setup MySQL Database
 
