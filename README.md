@@ -608,7 +608,7 @@ spec:
 
 The project includes a GitHub Actions workflow that provides automated CI/CD with the following features:
 
-### 🚀 Automated Features
+### Automated Features
 - **Selective Building**: Only builds services with actual code changes
 - **Docker Image Management**: Automatic tagging with timestamp and commit SHA
 - **Manifest Updates**: Automatically updates Kubernetes deployment files with new image tags
@@ -621,6 +621,7 @@ The project includes a GitHub Actions workflow that provides automated CI/CD wit
 ```bash
 DOCKERHUB_USERNAME=khaledhawil
 DOCKERHUB_TOKEN=<your_dockerhub_access_token>
+PERSONAL_ACCESS_TOKEN=<your_github_personal_access_token>
 ```
 
 #### DockerHub Token Setup
@@ -628,19 +629,24 @@ DOCKERHUB_TOKEN=<your_dockerhub_access_token>
 2. Create new access token with Read, Write, Delete permissions
 3. Add token to GitHub repository secrets
 
-### 📋 Workflow Process
+#### GitHub Personal Access Token Setup
+1. Go to [GitHub Personal Access Tokens](https://github.com/settings/tokens)
+2. Create new token with `repo` permissions
+3. Add token to GitHub repository secrets
+
+### Workflow Process
 1. **Push Detection**: Workflow triggers on changes to service directories
 2. **Change Analysis**: Determines which services need rebuilding
 3. **Image Building**: Builds and pushes Docker images with unique tags
 4. **Manifest Update**: Updates deployment YAML files with new image tags
 5. **Git Commit**: Pushes updated manifests back to repository
 
-### 🏷️ Image Tagging Strategy
+### Image Tagging Strategy
 - **Format**: `YYYYMMDD-HHMMSS-shortsha`
 - **Example**: `khaledhawil/auth:20240315-143022-a1b2c3d`
 - **Benefits**: Chronological ordering, unique identification, rollback capability
 
-### 📖 Detailed Documentation
+### Detailed Documentation
 - [Complete CI/CD Workflow Guide](docs/ci-cd-workflow.md)
 - [GitHub Secrets Setup](docs/github-secrets.md)
 

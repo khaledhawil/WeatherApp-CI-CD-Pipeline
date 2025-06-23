@@ -23,11 +23,22 @@
 
 ### GitHub Repository Secrets
 
+#### `PERSONAL_ACCESS_TOKEN`
+- **Description**: GitHub Personal Access Token for repository write access
+- **Required**: Yes
+- **Permissions**: repo (Full control of private repositories)
+- **How to Generate**:
+  1. Go to [GitHub Personal Access Tokens](https://github.com/settings/tokens)
+  2. Click "Generate new token" → "Generate new token (classic)"
+  3. Name: `github-actions-ci-cd`
+  4. Select scopes: `repo` (Full control of private repositories)
+  5. Set expiration (recommend 1 year)
+  6. Copy the generated token
+
 #### `GITHUB_TOKEN`
 - **Description**: GitHub Personal Access Token (automatically provided)
-- **Required**: Automatically available
-- **Permissions**: Contents: write, Pull requests: write
-- **Note**: This is automatically provided by GitHub Actions
+- **Required**: Automatically available (but insufficient for push operations)
+- **Note**: This is automatically provided by GitHub Actions but doesn't have write permissions for workflow-triggered pushes
 
 ## Setting Up Secrets in GitHub Repository
 
@@ -51,6 +62,7 @@
 |-------------|-------|--------|----------|
 | `DOCKERHUB_USERNAME` | `khaledhawil` | Manual | ✅ |
 | `DOCKERHUB_TOKEN` | `<your_token>` | DockerHub | ✅ |
+| `PERSONAL_ACCESS_TOKEN` | `<your_pat>` | GitHub | ✅ |
 | `GITHUB_TOKEN` | `<auto>` | GitHub | ✅ (Auto) |
 
 ## Verification
@@ -90,6 +102,7 @@ For repository maintainers, here's the information needed:
 # Required GitHub Secrets (add via GitHub UI):
 DOCKERHUB_USERNAME=khaledhawil
 DOCKERHUB_TOKEN=<generate_from_dockerhub>
+PERSONAL_ACCESS_TOKEN=<generate_from_github>
 
 # GITHUB_TOKEN is automatically provided
 ```

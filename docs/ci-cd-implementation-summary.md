@@ -1,6 +1,6 @@
 # CI/CD Implementation Summary
 
-## 📁 Files Created
+## Files Created
 
 ### GitHub Actions Workflow
 - **`.github/workflows/ci-cd.yml`** - Main CI/CD pipeline workflow
@@ -30,15 +30,16 @@
 ### Updated Files
 - **`README.md`** - Added CI/CD section with workflow overview
 
-## 🔑 Required GitHub Secrets
+## Required GitHub Secrets
 
 | Secret Name | Value | Purpose |
 |-------------|-------|---------|
 | `DOCKERHUB_USERNAME` | `khaledhawil` | DockerHub authentication |
 | `DOCKERHUB_TOKEN` | `<generated_token>` | DockerHub access token |
+| `PERSONAL_ACCESS_TOKEN` | `<github_pat>` | Repository write access |
 | `GITHUB_TOKEN` | `<auto_provided>` | Repository access (automatic) |
 
-## 🚀 Workflow Features
+## Workflow Features
 
 ### Change Detection
 - Monitors `auth/`, `weather/`, `UI/` directories
@@ -63,14 +64,14 @@
 - Prevents infinite workflow triggers
 - Conditional execution based on change detection
 
-## 📋 Workflow Jobs
+## Workflow Jobs
 
 1. **detect-changes** - Identifies which services changed
 2. **build-and-push-[service]** - Builds Docker images for changed services
 3. **update-manifests** - Updates Kubernetes deployment files
 4. **deploy-notification** - Provides deployment summary
 
-## 🔧 Setup Process
+## Setup Process
 
 ### 1. DockerHub Token Generation
 ```bash
@@ -85,6 +86,7 @@
 # Add repository secrets:
 DOCKERHUB_USERNAME=khaledhawil
 DOCKERHUB_TOKEN=<your_generated_token>
+PERSONAL_ACCESS_TOKEN=<your_github_pat>
 ```
 
 ### 3. Workflow Testing
@@ -98,7 +100,7 @@ git commit -m "Test workflow trigger"
 git push origin main
 ```
 
-## 🎯 Workflow Triggers
+##  Workflow Triggers
 
 ### Automatic Triggers
 - Push to `main` or `master` branch
@@ -109,7 +111,7 @@ git push origin main
 - GitHub Actions tab → Run workflow
 - Pull request creation/updates
 
-## 🔍 Monitoring and Debugging
+## Monitoring and Debugging
 
 ### Workflow Status
 - GitHub Actions tab shows workflow runs
@@ -122,7 +124,7 @@ git push origin main
 3. **Manifest Updates**: Verify image tag patterns
 4. **CI Loops**: Ensure `[skip ci]` in commit messages
 
-## 📈 Benefits
+## Benefits
 
 ### Efficiency
 - **Selective Building**: Only builds changed services
@@ -139,7 +141,7 @@ git push origin main
 - **Clear Feedback**: Detailed workflow summaries
 - **Documentation**: Comprehensive guides and troubleshooting
 
-## 🔮 Future Enhancements
+## Future Enhancements
 
 ### Potential Improvements
 - Add security scanning for Docker images
@@ -155,7 +157,7 @@ git push origin main
 - Canary deployments
 - Infrastructure as Code (Terraform)
 
-## ✅ Implementation Complete
+## Implementation Complete
 
 The CI/CD pipeline is now fully implemented and ready for use. The workflow will automatically:
 
