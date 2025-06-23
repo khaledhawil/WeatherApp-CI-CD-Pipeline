@@ -6,32 +6,98 @@ A production-ready microservices weather application deployed on DigitalOcean Ku
 
 This project demonstrates a complete Kubernetes deployment of a weather application featuring user authentication, real-time weather data, and a responsive web interface. The application is deployed on DigitalOcean Kubernetes (DOKS) cluster with external access via DigitalOcean LoadBalancer.
 
+## Screenshots
+
+### Application Interface
+
+#### Login Page
+![Login Page](images/lohin-page.png)
+
+The login interface provides secure user authentication with JWT token-based session management.
+
+#### Signup Page  
+![Signup Page](images/sginup=page.png)
+
+User registration form with input validation and secure password handling.
+
+#### Weather Dashboard
+![Weather Dashboard](images/ui-weather-page.png)
+
+Main weather interface displaying real-time weather data with responsive design for optimal user experience.
+
+### Kubernetes Cluster
+
+#### Cluster Resources
+![Kubernetes Cluster Resources](images/k8s-cluster-resourses-running-in-bash-in-vcode.png)
+
+Live view of Kubernetes cluster resources running on DigitalOcean, showing all deployed services, pods, and infrastructure components.
+
 ## Architecture
 
-The application consists of four main microservices:
+The application consists of four main microservices deployed on DigitalOcean Kubernetes:
 
-1. **Authentication Service** (Go) - User management and JWT authentication
-2. **Weather Service** (Python/Flask) - Weather data retrieval from OpenWeatherMap API
-3. **UI Service** (Node.js/Express) - Web frontend and API orchestration
-4. **MySQL Database** - Persistent user data storage
+### 1. Authentication Service (Go)
+- **Image**: `khaledhawil/auth:1.0.0`
+- **Port**: 8080
+- **Technology**: Go with Gin framework, GORM, JWT tokens
+- **Endpoints**:
+  - `POST /signup` - User registration
+  - `POST /login` - User authentication
+  - `GET /health` - Health check
+- **Database**: MySQL with persistent storage
+- **Features**: JWT tokens with secure password hashing
 
-## Technology Stack
+### 2. Weather Service (Python/Flask)
+- **Image**: `khaledhawil/weather:1.0.0`
+- **Port**: 5000
+- **Technology**: Python Flask with CORS support, OpenWeatherMap integration
+- **Endpoints**:
+  - `GET /` - Health check
+  - `GET /weather/{city}` - Get weather data for a city
+- **External API**: OpenWeatherMap API integration
+- **Features**: CORS support, error handling, rate limiting
 
-### Backend Services
-- **Authentication**: Go with Gin framework, GORM, JWT tokens
-- **Weather**: Python Flask with CORS support, OpenWeatherMap integration
-- **Database**: MySQL 5.7 with persistent storage
+### 3. UI Service (Node.js/Express)
+- **Image**: `khaledhawil/ui:1.0.0`
+- **Port**: 3000
+- **Technology**: Node.js with Express, EJS templating, Winston logging
+- **Features**:
+  - Responsive web interface
+  - User registration and login forms
+  - Weather dashboard with real-time data
+  - JWT session management
+  - Rate limiting and security middleware
 
-### Frontend
-- **UI**: Node.js with Express, EJS templating, Winston logging
-- **Features**: Responsive design, JWT session management, rate limiting
+### 4. MySQL Database
+- **Image**: `mysql:5.7`
+- **Port**: 3306
+- **Database**: weatherapp
+- **Storage**: DigitalOcean Block Storage (10Gi persistent volume)
+- **Features**: StatefulSet with ordered deployment, persistent data storage
 
-### Infrastructure
+## Infrastructure
+
 - **Platform**: DigitalOcean Kubernetes (DOKS)
 - **Storage**: DigitalOcean Block Storage (10Gi persistent volumes)
 - **Load Balancer**: DigitalOcean LoadBalancer for external access
 - **Networking**: ClusterIP services for internal communication
 - **Ingress**: NGINX Ingress Controller with SSL/TLS support
+
+## Docker Images
+
+### Application Services
+- **Authentication Service**: `khaledhawil/auth:1.0.0`
+- **Weather Service**: `khaledhawil/weather:1.0.0`
+- **UI Service**: `khaledhawil/ui:1.0.0`
+
+### Infrastructure Services
+- **MySQL Database**: `mysql:5.7`
+
+### Utility Images
+- **MySQL Init Job**: `mysql:5.7` (database initialization)
+- **Cleanup Job**: `busybox:1.35` (maintenance tasks)
+
+**Registry**: All custom images are hosted on Docker Hub under `khaledhawil` organization with semantic versioning.
 
 ## Project Structure
 
@@ -200,41 +266,6 @@ The UI service creates a DigitalOcean LoadBalancer that provides:
 - High availability with health checking
 - SSL termination capabilities
 - Geographic load distribution
-
-## Services Overview
-
-### Authentication Service (Go)
-- **Port**: 8080
-- **Endpoints**:
-  - `POST /signup` - User registration
-  - `POST /login` - User authentication
-  - `GET /health` - Health check
-- **Database**: MySQL with persistent storage
-- **Authentication**: JWT tokens with secure password hashing
-
-### Weather Service (Python)
-- **Port**: 5000
-- **Endpoints**:
-  - `GET /` - Health check
-  - `GET /weather/{city}` - Get weather data for a city
-- **External API**: OpenWeatherMap API integration
-- **Features**: CORS support, error handling, rate limiting
-
-### UI Service (Node.js)
-- **Port**: 3000
-- **Features**:
-  - Responsive web interface
-  - User registration and login forms
-  - Weather dashboard with real-time data
-  - JWT session management
-  - Rate limiting and security middleware
-- **External Access**: DigitalOcean LoadBalancer
-
-### MySQL Database
-- **Port**: 3306
-- **Database**: weatherapp
-- **Storage**: DigitalOcean Block Storage (10Gi persistent volume)
-- **High Availability**: StatefulSet with ordered deployment
 
 ## Environment Variables
 
@@ -439,7 +470,75 @@ cd kubernetes/authentication/mysql
 
 ## Development
 
-### Building Docker Images
+### Building and Pushing Docker Images
+
+The application uses custom Docker images that need to be built and pushed to a container registry. Here's how to build each service:
+
+#### Authentication Service
+```bash
+cd auth
+docker build -t khaledhawil/auth:1.0.0 .
+docker push khaledhawil/auth:1.0.0
+
+# For development with your own registry
+docker build -t your-registry/weather-auth:latest .
+docker push your-registry/weather-auth:latest
+```
+
+#### Weather Service
+```bash
+cd weather
+docker build -t khaledhawil/weather:1.0.0 .
+docker push khaledhawil/weather:1.0.0
+
+# For development with your own registry
+docker build -t your-registry/weather-service:latest .
+docker push your-registry/weather-service:latest
+```
+
+#### UI Service
+```bash
+cd UI
+docker build -t khaledhawil/ui:1.0.0 .
+docker push khaledhawil/ui:1.0.0
+
+# For development with your own registry
+docker build -t your-registry/weather-ui:latest .
+docker push your-registry/weather-ui:latest
+```
+
+### Using Custom Images
+
+If you build your own images, update the deployment files:
+
+1. **Authentication Deployment** (`kubernetes/authentication/deployment.yaml`):
+   ```yaml
+   image: your-registry/weather-auth:latest
+   ```
+
+2. **Weather Deployment** (`kubernetes/weather/deployment.yaml`):
+   ```yaml
+   image: your-registry/weather-service:latest
+   ```
+
+3. **UI Deployment** (`kubernetes/ui/deployment.yaml`):
+   ```yaml
+   image: your-registry/weather-ui:latest
+   ```
+
+### Image Pull Policies
+
+All deployments use `imagePullPolicy: IfNotPresent`:
+- Downloads image only if not cached locally
+- Improves deployment speed
+- Reduces bandwidth usage
+- Good for development with stable tags
+
+For development, you might want to use `imagePullPolicy: Always` to ensure latest changes are pulled.
+
+### Local Development
+
+Each service can be run locally for development without Docker:
 
 ```bash
 # Build authentication service
@@ -460,9 +559,12 @@ docker push your-registry/weather-ui:latest
 
 ### Local Development
 
+Each service can be run locally for development without Docker:
+
 ```bash
 # Authentication service
 cd auth
+go mod tidy
 go run main/main.go
 
 # Weather service
@@ -474,6 +576,32 @@ python main.py
 cd UI
 npm install
 npm start
+```
+
+### Container Registry Setup
+
+For production deployments with your own images:
+
+1. **Create Registry Account**: Docker Hub, AWS ECR, Google GCR, etc.
+2. **Build Images**: Use consistent tagging strategy
+3. **Push Images**: Ensure images are accessible from your cluster
+4. **Update Manifests**: Modify deployment files with your image references
+5. **Image Pull Secrets**: Create secrets if using private registry
+
+```bash
+# Example for private registry
+kubectl create secret docker-registry regcred \
+  --docker-server=your-registry.com \
+  --docker-username=your-username \
+  --docker-password=your-password \
+  --docker-email=your-email@example.com
+```
+
+Then add to deployment spec:
+```yaml
+spec:
+  imagePullSecrets:
+  - name: regcred
 ```
 
 ## Documentation
