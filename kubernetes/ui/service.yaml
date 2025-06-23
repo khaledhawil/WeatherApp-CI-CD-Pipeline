@@ -3,10 +3,15 @@ apiVersion: v1
 kind: Service
 metadata:
   name: weatherapp-ui
+  annotations:
+    service.beta.kubernetes.io/do-loadbalancer-name: "weatherapp-ui-lb"
+    service.beta.kubernetes.io/do-loadbalancer-protocol: "http"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-path: "/health"
+    service.beta.kubernetes.io/do-loadbalancer-healthcheck-protocol: "http"
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   ports:
-    - port: 3000
+    - port: 80
       targetPort: http
       protocol: TCP
       name: http

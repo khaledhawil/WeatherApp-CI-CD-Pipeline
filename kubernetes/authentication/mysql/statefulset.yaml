@@ -35,6 +35,8 @@ spec:
             secretKeyRef:
               name: mysql-secret
               key: auth-password
+        args:
+        - --ignore-db-dir=lost+found
         resources:
           requests:
             memory: "512Mi"
